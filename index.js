@@ -1,79 +1,83 @@
 const fs = require('fs');
-const path = require('path');
 
+const convertToJson = (data) => {
+  data = data.split("}\n{");
+  data = data.join("},\n{");
+  data = "[" + data + "]";
+  data = JSON.parse(data);
+  return data;
+}
 
-const dbPath = path.join(__dirname, 'db.txt');
+const getTodosSync = () => fs.readFileSync('db.txt', 'utf-8');
 
+const getTodoSync = (id) => {
+  let data = fs.readFileSync('db.txt', 'utf-8');
+  data = convertToJson(data);
+  for (let i of data) {
+    if (i.id === id) {
+      return JSON.stringify(i);
+    }
+  }
+};
 
-function createTodoSync(title) {
-  const newTodo = {
+const createTodoSync = (todo) => {
+  const data = {
     id: Date.now(),
-    title: title,
+    title: todo,
     isCompleted: false,
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   };
-  
-  const todoString = JSON.stringify(newTodo, null, 2);
-  
-  fs.appendFileSync(dbPath, todoString + '\n'); 
-  
-  return newTodo;
-}
+  fs.appendFileSync('db.txt', `${JSON.stringify(data, null, 2)}\n`);
+};
 
-function getTodosSync() {
-  try {
-    const data = fs.readFileSync(dbPath, 'utf-8');
-    return data;
-  } catch (error) {
-    return '';
+const updateTodoSync = (id, updates) => {
+  let data = fs.readFileSync('db.txt', 'utf-8');
+  data = convertToJson(data);
+  for (let i in data) {
+    if (data[i].id === id) {
+      for (let j of Object.keys(updates)) {
+        data[i][j] = updates[j];
+      }
+      data[i].updatedAt = new Date().toISOString();
+    }
+    if (i == 0) {
+      fs.writeFileSync('db.txt', `${JSON.stringify(data[i], null, 2)}\n`);
+    } else {
+      fs.appendFileSync('db.txt', `${JSON.stringify(data[i], null, 2)}\n`);
+    }
   }
-}
+};
 
+const deleteTodoSync = (id) => {
+  let data = fs.readFileSync('db.txt', 'utf-8');
+  data = convertToJson(data);
+  const filteredData = data.filter(todo => todo.id !== id);
+  fs.writeFileSync('db.txt', '');
+  for (let i of filteredData) {
+    fs.appendFileSync('db.txt', `${JSON.stringify(i, null, 2)}\n`);
+  }
+};
 
-function getTodoSync(id) {
-  const data = getTodosSync();
-  const todos = data.trim().split('\n').map(line => JSON.parse(line));
-  
-  const todo = todos.find(t => t.id === id);
-  return todo ? JSON.stringify(todo, null, 2) : null;
-}
+const getTodos = () => {};
 
-function updateTodoSync(id, updates) {
-  const data = getTodosSync();
-  const todos = data.trim().split('\n').map(line => JSON.parse(line));
+const getTodo = (id) => {};
 
-  const index = todos.findIndex(t => t.id === id);
-  if (index === -1) return null;
+const createTodo = (todo) => {};
 
-  todos[index] = {
-    ...todos[index],
-    ...updates,
-    updatedAt: new Date().toISOString(),
-  };
+const updateTodo = async (id, updates) => {};
 
-  const updatedData = todos.map(todo => JSON.stringify(todo, null, 2)).join('\n');
-  fs.writeFileSync(dbPath, updatedData + '\n');
-  
-  return todos[index];
-}
-
-function deleteTodoSync(id) {
-  const data = getTodosSync();
-  const todos = data.trim().split('\n').map(line => JSON.parse(line));
-  
-  const updatedTodos = todos.filter(t => t.id !== id);
-  
-  const updatedData = updatedTodos.map(todo => JSON.stringify(todo, null, 2)).join('\n');
-  fs.writeFileSync(dbPath, updatedData + '\n');
-  
-  return todos.length !== updatedTodos.length; 
-}
+const deleteTodo = async (id) => {};
 
 module.exports = {
-  createTodoSync,
   getTodosSync,
   getTodoSync,
+  createTodoSync,
   updateTodoSync,
   deleteTodoSync,
+  getTodos,
+  getTodo,
+  createTodo,
+  deleteTodo,
+  updateTodo,
 };
